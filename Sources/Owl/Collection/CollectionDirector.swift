@@ -321,7 +321,14 @@ open class CollectionDirector: NSObject,
 		let oldSections = self.sections.map { $0.copy() }
 		update(self)
 		let changeset = StagedChangeset(source: oldSections, target: sections)
-		
+        // If a collection view's layout is incomplete when performBatchUpdates() is called, the collection view may
+        // call upon its data source *before* the 'update' block is called. This can result in a crash (or glitch)
+        // if the collection view asks for layout info for cells that represent data that has already been removed.
+        // Thus, we reset the data back to its original state, and let the setData() calls in reload(using:setData:)
+        // do the final data update
+        
+        self.sections = oldSections // Reset!
+        
 		collection?.reload(using: changeset, setData: {
 			self.sections = $0
 		})
@@ -390,10 +397,12 @@ public extension CollectionDirector {
 		adapter.dispatchEvent(.willDisplay, model: model, cell: cell, path: indexPath, params: nil)
 	}
 
-	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        let (model, adapter) = context(forItemAt: indexPath)
-        let _ = adapter.dispatchEvent(.endDisplay, model: model, cell: cell, path: indexPath, params: nil)
-	}
+    // Since this is called after animation finishes, this may attempt to fetch data that no longer exists, resulting
+    // in a crash. The old cachedItems approach also had problems, so disable didEndDisplaying support altogether
+//	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+//        let (model, adapter) = context(forItemAt: indexPath)
+//        let _ = adapter.dispatchEvent(.endDisplay, model: model, cell: cell, path: indexPath, params: nil)
+//	}
     
     private func adapterForCellClass(_ cell: UICollectionViewCell?) -> CollectionCellAdapterProtocol? {
         guard let cell = cell else { return nil }
