@@ -702,11 +702,14 @@ extension TableDirector: UITableViewDataSource, UITableViewDelegate {
 		return (adapter.dispatchEvent(.moveAdjustDestination, model: model, cell: nil, path: sourceIndexPath, params: proposedDestinationIndexPath) as? IndexPath) ?? proposedDestinationIndexPath
 	}
 
-	public func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        //let adapter = adapterForCellClass(tableView.cellForRow(at: indexPath))
-        let (model, adapter) = context(forItemAt: indexPath)
-        let _ = adapter.dispatchEvent(.endDisplay, model: model, cell: cell, path: indexPath, params: nil)
-	}
+    // Since this is called after animation finishes, this may attempt to fetch data that no longer exists, resulting
+    // in a crash. The old cachedItems approach also had problems, so disable didEndDisplaying support altogether
+
+//	public func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+//        //let adapter = adapterForCellClass(tableView.cellForRow(at: indexPath))
+//        let (model, adapter) = context(forItemAt: indexPath)
+//        let _ = adapter.dispatchEvent(.endDisplay, model: model, cell: cell, path: indexPath, params: nil)
+//	}
 
 	public func tableView(_ tableView: UITableView, shouldShowMenuForRowAt indexPath: IndexPath) -> Bool {
 		let (model, adapter) = context(forItemAt: indexPath)
